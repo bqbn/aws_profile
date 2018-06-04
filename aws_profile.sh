@@ -4,16 +4,16 @@ function _awscli_env_vars() {
   # Historically, awscli supports AWS_DEFAULT_PROFILE whereas almost
   # all other SDKs support AWS_PROFILE. The good news is that awscli
   # has been updated to support both since 2015/4. Thus we only list
-  # AWS_PROFILE here, and always set AWS_DEFAULT_PROFILE to AWS_PROFILE
-  # in the main function below.
+  # AWS_PROFILE in this function, and always set AWS_DEFAULT_PROFILE
+  # to AWS_PROFILE in the main function below.
   # https://github.com/aws/aws-cli/issues/1281
   # https://github.com/boto/boto/issues/3287
 
-  # As of boto v2.39.0, AWS_SECURITY_TOKEN is needed or ansible won't
-  # work. Ansible not working is because old boto originally supported
-  # AWS_SECURITY_TOKEN environment variable, but not AWS_SESSION_TOKEN.
-  # AWS has standardized use AWS_SESSION_TOKEN since, and boto just needs
-  # to catch up.
+  # We list both AWS_SECURITY_TOKEN and AWS_SESSION_TOKEN here because
+  # as of boto v2.39.0, ansible doesn't work without AWS_SECURITY_TOKEN.
+  # And Ansible doesn't work because old boto only supports
+  # AWS_SECURITY_TOKEN, but not AWS_SESSION_TOKEN. AWS has standardized
+  # to use AWS_SESSION_TOKEN, and boto just needs to catch up.
   # https://aws.amazon.com/blogs/security/a-new-and-standardized-way-to-manage-credentials-in-the-aws-sdks/
   # https://github.com/boto/boto/issues/3298
   echo "AWS_PROFILE"              \
