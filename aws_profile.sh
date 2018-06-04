@@ -60,13 +60,13 @@ function aws_get_mfa_session_token() {
   unset AWS_SECURITY_TOKEN
   unset AWS_SESSION_TOKEN_EXPIRE
 
-  # TODO: Add support for multiple MFAs. Currently if MY_MFA_SERIAL is
-  # defined as an environment variable, it is used across all profiles.
-  # A work around is to set MY_MFA_SERIAL on the command line.
-  # For example,
-  # MY_MFA_SERIAL=my_mfa_serial aws_profile <profile> <token>
-  #
-  local mfa_serial=${MY_MFA_SERIAL:=default_mfa_serial}
+  # See https://docs.aws.amazon.com/cli/latest/topic/config-vars.html
+  # for how to configure mfa_serial in AWS CLI config file.
+  local mfa_serial=
+  mfa_serial=$(aws configure get mfa_serial) || {
+    echo "Failed to get mfa_serial. Please set it in ~/.aws/config file." 1>&2
+    return 1
+  }
 
   local session_token=( $(aws sts get-session-token     \
                           --serial-number "$mfa_serial" \
@@ -112,7 +112,7 @@ function aws_profile() {
         if aws_get_mfa_session_token "$2" ; then
           _show_awscli_env_vars
         fi
-     fi
+      fi
   else
       echo "\`$1' is not recognized." 1>&2
       echo "recognized profile names are: $aws_profiles" 1>&2
