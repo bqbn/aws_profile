@@ -1,6 +1,6 @@
 # aws_profile
 
-A shell script that helps switch AWS profiles for AWS command line tools
+A shell script that helps switch AWS profiles for AWS command line tools. Supports using MFA in profiles.
 
 ## Install
 
@@ -19,5 +19,5 @@ git clone https://github.com/bqbn/aws_profile.git
 2. Run the aws_profile command to switch among AWS profiles.
 
     ```bash
-    [MY_MFA_SERIAL=my_mfa_serial] aws_profile <profile> [mfa_token]
+    aws_profile <profile> [mfa_token]
     ```
