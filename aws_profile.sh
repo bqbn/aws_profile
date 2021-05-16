@@ -113,9 +113,12 @@ function aws_profile() {
           _show_awscli_env_vars
         fi
       fi
-  else
+  elif [ $? -eq 255 ] ; then
       echo "\`$1' is not recognized." 1>&2
       echo "recognized profile names are: $aws_profiles" 1>&2
+      return 1
+  else
+      echo "Error running \"aws configure list --profile $1\"" 1>&2
       return 1
   fi
 }
