@@ -8,6 +8,24 @@ function _is_awscli_v1() {
   fi
 }
 
+function _find_profile() {
+  local profile="$1"
+  [ -z "$profile" ] && return 1
+
+  local a=
+  if _is_awscli_v1 ; then
+    a=$(
+      egrep -o '^\[[^]]+]' "${AWS_CONFIG_FILE:-$HOME/.aws/config}" 2>/dev/null \
+      | sed 's/\[//g' | sed 's/\]//g' \
+      | tr -s '\n' ' '
+    )
+  else
+    a=$(aws configure list-profiles 2> /dev/null | tr -s '\n' ' ')
+  fi
+
+  echo $a | egrep "$profile" > /dev/null && return 0 || return 1
+}
+
 function _awscli_env_vars() {
   # Historically, awscli supports AWS_DEFAULT_PROFILE whereas almost
   # all other SDKs support AWS_PROFILE. The good news is that awscli
@@ -52,12 +70,15 @@ function _get_aws_profiles() {
   # and if not, fall back to check the config file directly.
   local a=
   if _is_awscli_v1 ; then
-    a=$(egrep -o '^\[[^]]+]' "${AWS_CONFIG_FILE:-$HOME/.aws/config}" 2>/dev/null)
-    echo "$a" | sed 's/\[//g' | sed 's/\]//g' | tr -s '\n' ' '
+    a=$(
+      egrep -o '^\[[^]]+]' "${AWS_CONFIG_FILE:-$HOME/.aws/config}" 2>/dev/null \
+      | sed 's/\[//g' | sed 's/\]//g' \
+      | tr -s '\n' ' '
+    )
   else
-    a=$(aws configure list-profiles 2> /dev/null)
-    echo "$a" | tr -s '\n' ' '
+    a=$(aws configure list-profiles 2> /dev/null | tr -s '\n' ' ')
   fi
+  echo $a
 }
 
 function aws_get_mfa_session_token() {
@@ -115,7 +136,7 @@ function aws_profile() {
   # reset env variables before setting new ones
   _reset_awscli_env_vars
 
-  if aws configure list --profile "$1" &> /dev/null ; then
+  if _find_profile "$1" ; then
       export AWS_PROFILE=$1
       export AWS_DEFAULT_PROFILE=$AWS_PROFILE
 
@@ -136,12 +157,9 @@ function aws_profile() {
         eval $(aws configure export-credentials --format env)
         _show_awscli_env_vars
       fi
-  elif [ $? -eq 255 ] ; then
+  else
       echo "\`$1' is not recognized." 1>&2
       echo "recognized profile names are: $aws_profiles" 1>&2
-      return 1
-  else
-      echo "Error running \"aws configure list --profile $1\"" 1>&2
       return 1
   fi
 }
