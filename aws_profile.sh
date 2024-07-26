@@ -8,10 +8,9 @@ function _is_awscli_v1() {
   fi
 }
 
-function _find_profile() {
-  local profile="$1"
-  [ -z "$profile" ] && return 1
-
+function _get_aws_profiles() {
+  # Try the "list-profiles" subcommand first, which is introduced in awscli v2,
+  # and if not, fall back to check the config file directly.
   local a=
   if _is_awscli_v1 ; then
     a=$(
@@ -22,6 +21,14 @@ function _find_profile() {
   else
     a=$(aws configure list-profiles 2> /dev/null | tr -s '\n' ' ')
   fi
+  echo $a
+}
+
+function _find_profile() {
+  local profile="$1"
+  [ -z "$profile" ] && return 1
+
+  local a=$(_get_aws_profiles)
 
   echo $a | egrep "$profile" > /dev/null && return 0 || return 1
 }
@@ -63,22 +70,6 @@ function _reset_awscli_env_vars() {
   for i in $(_awscli_env_vars) ; do
     unset $i
   done 
-}
-
-function _get_aws_profiles() {
-  # Try the "list-profiles" subcommand first, which is introduced in awscli v2,
-  # and if not, fall back to check the config file directly.
-  local a=
-  if _is_awscli_v1 ; then
-    a=$(
-      egrep -o '^\[[^]]+]' "${AWS_CONFIG_FILE:-$HOME/.aws/config}" 2>/dev/null \
-      | sed 's/\[//g' | sed 's/\]//g' \
-      | tr -s '\n' ' '
-    )
-  else
-    a=$(aws configure list-profiles 2> /dev/null | tr -s '\n' ' ')
-  fi
-  echo $a
 }
 
 function aws_get_mfa_session_token() {
