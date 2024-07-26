@@ -16,11 +16,12 @@ function _awscli_env_vars() {
   # to use AWS_SESSION_TOKEN, and boto just needs to catch up.
   # https://aws.amazon.com/blogs/security/a-new-and-standardized-way-to-manage-credentials-in-the-aws-sdks/
   # https://github.com/boto/boto/issues/3298
-  echo "AWS_PROFILE"              \
-       "AWS_ACCESS_KEY_ID"        \
-       "AWS_SECRET_ACCESS_KEY"    \
-       "AWS_SESSION_TOKEN"        \
-       "AWS_SESSION_TOKEN_EXPIRE" \
+  echo "AWS_PROFILE"                \
+       "AWS_ACCESS_KEY_ID"          \
+       "AWS_CREDENTIAL_EXPIRATION"  \
+       "AWS_SECRET_ACCESS_KEY"      \
+       "AWS_SESSION_TOKEN"          \
+       "AWS_SESSION_TOKEN_EXPIRE"   \
        "AWS_SECURITY_TOKEN"
 }
 
@@ -110,15 +111,21 @@ function aws_profile() {
       export AWS_DEFAULT_PROFILE=$AWS_PROFILE
 
       # Most programs can figure out the correct region when AWS_PROFILE is
-      # defined and ~/.aws/config is probably configured, and some can not.
+      # defined and ~/.aws/config is properly configured, and some can not.
       # Exporting AWS_REGION for those that cannot.
       export AWS_REGION=$(aws configure get region --profile $AWS_PROFILE)
       export AWS_DEFAULT_REGION=$AWS_REGION
 
-      if [[ -n "$2" ]] ; then
-        if aws_get_mfa_session_token "$2" ; then
-          _show_awscli_env_vars
+      if aws --version | egrep "aws-cli/1" > /dev/null; then
+        if [[ -n "$2" ]] ; then
+          if aws_get_mfa_session_token "$2" ; then
+            _show_awscli_env_vars
+          fi
         fi
+      else
+        aws sso login
+        eval $(aws configure export-credentials --format env)
+        _show_awscli_env_vars
       fi
   elif [ $? -eq 255 ] ; then
       echo "\`$1' is not recognized." 1>&2
