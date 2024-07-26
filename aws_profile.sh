@@ -1,5 +1,13 @@
 #!/bin/bash
 
+function _is_awscli_v1() {
+  if aws --version | egrep "aws-cli/1" > /dev/null; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 function _awscli_env_vars() {
   # Historically, awscli supports AWS_DEFAULT_PROFILE whereas almost
   # all other SDKs support AWS_PROFILE. The good news is that awscli
@@ -43,11 +51,12 @@ function _get_aws_profiles() {
   # Try the "list-profiles" subcommand first, which is introduced in awscli v2,
   # and if not, fall back to check the config file directly.
   local a=
-  if a=$(aws configure list-profiles 2> /dev/null) ; then
-    echo "$a" | tr -s '\n' ' '
-  else
-    local a=$(egrep -o '^\[[^]]+]' "${AWS_CONFIG_FILE:-$HOME/.aws/config}" 2>/dev/null)
+  if _is_awscli_v1 ; then
+    a=$(egrep -o '^\[[^]]+]' "${AWS_CONFIG_FILE:-$HOME/.aws/config}" 2>/dev/null)
     echo "$a" | sed 's/\[//g' | sed 's/\]//g' | tr -s '\n' ' '
+  else
+    a=$(aws configure list-profiles 2> /dev/null)
+    echo "$a" | tr -s '\n' ' '
   fi
 }
 
@@ -116,7 +125,7 @@ function aws_profile() {
       export AWS_REGION=$(aws configure get region --profile $AWS_PROFILE)
       export AWS_DEFAULT_REGION=$AWS_REGION
 
-      if aws --version | egrep "aws-cli/1" > /dev/null; then
+      if _is_awscli_v1 ; then
         if [[ -n "$2" ]] ; then
           if aws_get_mfa_session_token "$2" ; then
             _show_awscli_env_vars
