@@ -39,8 +39,15 @@ function _reset_awscli_env_vars() {
 }
 
 function _get_aws_profiles() {
-  local a=$(egrep -o '^\[[^]]+]' "${AWS_CREDENTIALS_FILE:-$HOME/.aws/credentials}" 2>/dev/null)
-  echo "$a" | sed 's/\[//g' | sed 's/\]//g' | tr -s '\n' ' '
+  # Try the "list-profiles" subcommand first, which is introduced in awscli v2,
+  # and if not, fall back to check the config file directly.
+  local a=
+  if a=$(aws configure list-profiles 2> /dev/null) ; then
+    echo "$a" | tr -s '\n' ' '
+  else
+    local a=$(egrep -o '^\[[^]]+]' "${AWS_CONFIG_FILE:-$HOME/.aws/config}" 2>/dev/null)
+    echo "$a" | sed 's/\[//g' | sed 's/\]//g' | tr -s '\n' ' '
+  fi
 }
 
 function aws_get_mfa_session_token() {
